@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --kd-cream: #FDF9ED;
+  --kd-beige: #F0E0B1;
+  --kd-sand: #EBE5D7;
+  --kd-gold: #EAC333;
+  --kd-dark-gold: #6E5505;
+  --kd-black: #020201;
+  --kd-charcoal: #2A2925;
+  --kd-grey: #85867E;
+  --kd-border: #C2C1BF;
+  --kd-white: #FCFCFB;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--kd-cream);
+  color: var(--kd-charcoal);
+}

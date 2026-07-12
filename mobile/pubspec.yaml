@@ -1,0 +1,30 @@
+name: rozy_mobile
+description: Rozy passenger and driver apps for Mbarara ride-hailing.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.2.1
+  http: ^1.2.2
+  shared_preferences: ^2.3.3
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
+  web_socket_channel: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Run with:
+  #   flutter run -t lib/main_passenger.dart
+  #   flutter run -t lib/main_driver.dart

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rozy API Tester</title>
+  <style>
+    :root { --cream:#FDF9ED; --gold:#EAC333; --charcoal:#2A2925; --border:#C2C1BF; }
+    body { font-family: system-ui, sans-serif; background: var(--cream); color: var(--charcoal); margin: 0; padding: 24px; }
+    h1 { margin-top: 0; }
+    .token { background: #fff; border: 1px solid var(--border); padding: 12px; border-radius: 8px; word-break: break-all; margin-bottom: 24px; }
+    section { background: #FCFCFB; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    h2 { margin: 0 0 12px; font-size: 1rem; }
+    label { display: block; font-size: 0.85rem; margin: 8px 0 4px; }
+    input, textarea, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+    textarea { min-height: 80px; font-family: monospace; font-size: 12px; }
+    button { background: var(--gold); border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    pre { background: #020201; color: #FDF9ED; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; max-height: 240px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    @media (max-width: 700px) { .row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>Rozy API Tester</h1>
+  <p>Open this page at <code>/dev</code> while the API runs. OTP codes print in the server console.</p>
+  <div class="token"><strong>JWT:</strong> <span id="jwt">(not logged in)</span></div>
+
+  <section>
+    <h2>GET /health</h2>
+    <button onclick="call('GET','/health')">Test health</button>
+    <pre id="out-health"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/auth/otp/request</h2>
+    <label>Phone</label><input id="phone" value="+256700000001" />
+    <button onclick="requestOtp()">Send OTP</button>
+    <pre id="out-otp-req"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/auth/otp/verify</h2>
+    <div class="row">
+      <div><label>Code</label><input id="otp" value="123456" /></div>
+      <div><label>Role</label><select id="role"><option>passenger</option><option>driver</option></select></div>
+    </div>
+    <button onclick="verifyOtp()">Verify & save token</button>
+    <pre id="out-otp-verify"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/auth/me</h2>
+    <button onclick="callAuth('GET','/auth/me','out-me')">Get me</button>
+    <pre id="out-me"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/operator/register</h2>
+    <label>Ride type</label>
+    <select id="ride-type"><option>boda</option><option>car_basic</option><option>car_xl</option></select>
+    <button onclick="callAuth('POST','/operator/register','out-op-reg', ()=>({ride_type:document.getElementById('ride-type').value}))">Register operator</button>
+    <pre id="out-op-reg"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/operator/profile</h2>
+    <button onclick="callAuth('GET','/operator/profile','out-op-prof')">Get profile</button>
+    <pre id="out-op-prof"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/operator/verification/upload</h2>
+    <label>doc_type</label><input id="doc-type" value="nin_front" />
+    <label>file</label><input id="doc-file" type="file" accept="image/*" />
+    <button onclick="uploadDoc()">Upload document</button>
+    <pre id="out-upload"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/operator/verification/submit</h2>
+    <textarea id="verify-json">{
+  "legal_name": "John Doe",
+  "nin": "CM1234567890123",
+  "permit_number": "P-12345",
+  "permit_expiry": "2027-01-01",
+  "insurance_expiry": "2026-12-01",
+  "plate": "UBA123A",
+  "bike_make": "Bajaj",
+  "bike_color": "Red",
+  "documents": []
+}</textarea>
+    <button onclick="submitVerification()">Submit verification</button>
+    <pre id="out-verify"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/operator/verification/status</h2>
+    <button onclick="callAuth('GET','/operator/verification/status','out-vstat')">Get status</button>
+    <pre id="out-vstat"></pre>
+  </section>
+
+  <h1 style="margin-top:32px">Driver online &amp; dispatch</h1>
+
+  <section>
+    <h2>POST /v1/operator/online</h2>
+    <div class="row">
+      <div><label>Lat</label><input id="online-lat" value="-0.6072" /></div>
+      <div><label>Lng</label><input id="online-lng" value="30.6586" /></div>
+    </div>
+    <button onclick="callAuth('POST','/operator/online','out-online', ()=>({
+      lat: parseFloat(document.getElementById('online-lat').value),
+      lng: parseFloat(document.getElementById('online-lng').value)
+    }))">Go online (driver token)</button>
+    <pre id="out-online"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/operator/offline</h2>
+    <button onclick="callAuth('POST','/operator/offline','out-offline')">Go offline</button>
+    <pre id="out-offline"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/operator/trips/incoming</h2>
+    <button onclick="callAuth('GET','/operator/trips/incoming','out-incoming')">Poll incoming trip</button>
+    <pre id="out-incoming"></pre>
+  </section>
+
+  <section>
+    <h2>POST accept / reject trip</h2>
+    <button onclick="callAuth('POST','/operator/trips/'+document.getElementById('trip-id').value+'/accept','out-accept')">Accept trip</button>
+    <button onclick="callAuth('POST','/operator/trips/'+document.getElementById('trip-id').value+'/reject','out-reject')">Reject trip</button>
+    <pre id="out-accept"></pre>
+    <pre id="out-reject"></pre>
+  </section>
+
+  <section>
+    <h2>POST arrived / start / complete</h2>
+    <label>Passenger PIN (from trip create)</label><input id="trip-pin" />
+    <button onclick="callAuth('POST','/operator/trips/'+document.getElementById('trip-id').value+'/arrived','out-arrived')">Arrived</button>
+    <button onclick="callAuth('POST','/operator/trips/'+document.getElementById('trip-id').value+'/start','out-start', ()=>({pin:document.getElementById('trip-pin').value}))">Start (PIN)</button>
+    <button onclick="callAuth('POST','/operator/trips/'+document.getElementById('trip-id').value+'/complete','out-complete')">Complete</button>
+    <pre id="out-arrived"></pre>
+    <pre id="out-start"></pre>
+    <pre id="out-complete"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/places/search?q=</h2>
+    <label>Query</label><input id="place-q" value="hospital" />
+    <button onclick="call('GET','/places/search?q='+encodeURIComponent(document.getElementById('place-q').value),'out-places')">Search places</button>
+    <pre id="out-places"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/fare/estimate</h2>
+    <textarea id="fare-json">{
+  "pickup": {"lat": -0.6072, "lng": 30.6586},
+  "dest": {"lat": -0.6010, "lng": 30.6490},
+  "ride_type": "boda"
+}</textarea>
+    <button onclick="postJson('/fare/estimate','fare-json','out-fare')">Estimate fare</button>
+    <pre id="out-fare"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/trips</h2>
+    <textarea id="trip-json">{
+  "pickup": {"lat": -0.6072, "lng": 30.6586},
+  "dest": {"lat": -0.6010, "lng": 30.6490},
+  "ride_type": "boda",
+  "pickup_landmark": "Clock Tower",
+  "dest_landmark": "Hospital"
+}</textarea>
+    <button onclick="callAuthPost('/trips','trip-json','out-trip')">Request trip</button>
+    <pre id="out-trip"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/trips/active</h2>
+    <button onclick="callAuth('GET','/trips/active','out-active')">Active trip</button>
+    <pre id="out-active"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/trips/{id}</h2>
+    <label>Trip ID</label><input id="trip-id" />
+    <button onclick="callAuth('GET','/trips/'+document.getElementById('trip-id').value,'out-trip-get')">Get trip</button>
+    <pre id="out-trip-get"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/trips/{id}/cancel</h2>
+    <button onclick="callAuth('POST','/trips/'+document.getElementById('trip-id').value+'/cancel','out-cancel')">Cancel trip</button>
+    <pre id="out-cancel"></pre>
+  </section>
+
+  <h1 style="margin-top:32px">Admin (login with role=admin, phone +256700000000)</h1>
+
+  <section>
+    <h2>GET /v1/admin/stats</h2>
+    <button onclick="callAuth('GET','/admin/stats','out-admin-stats')">Stats</button>
+    <pre id="out-admin-stats"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/admin/verification/queue</h2>
+    <button onclick="callAuth('GET','/admin/verification/queue','out-admin-queue')">Queue</button>
+    <pre id="out-admin-queue"></pre>
+  </section>
+
+  <section>
+    <h2>GET /v1/admin/verification/{id}</h2>
+    <label>Submission ID</label><input id="submission-id" />
+    <button onclick="callAuth('GET','/admin/verification/'+document.getElementById('submission-id').value,'out-admin-detail')">Detail</button>
+    <pre id="out-admin-detail"></pre>
+  </section>
+
+  <section>
+    <h2>POST approve / reject</h2>
+    <button onclick="callAuth('POST','/admin/verification/'+document.getElementById('submission-id').value+'/approve','out-admin-approve')">Approve</button>
+    <button onclick="callAuth('POST','/admin/verification/'+document.getElementById('submission-id').value+'/reject','out-admin-reject', ()=>({reason:'Rejected from dev page'}))">Reject</button>
+    <pre id="out-admin-approve"></pre>
+    <pre id="out-admin-reject"></pre>
+  </section>
+
+  <section>
+    <h2>POST /v1/admin/operators/{id}/wallet/credit</h2>
+    <label>Operator ID</label><input id="operator-id" />
+    <label>Amount (UGX)</label><input id="wallet-amount" value="10000" />
+    <button onclick="callAuth('POST','/admin/operators/'+document.getElementById('operator-id').value+'/wallet/credit','out-wallet', ()=>({
+      amount: parseInt(document.getElementById('wallet-amount').value, 10),
+      reference: 'dev-page-credit'
+    }))">Credit wallet</button>
+    <pre id="out-wallet"></pre>
+  </section>
+
+<script>
+const base = '/v1';
+let token = localStorage.getItem('rozy_jwt') || '';
+document.getElementById('jwt').textContent = token || '(not logged in)';
+
+function saveToken(t) {
+  token = t; localStorage.setItem('rozy_jwt', t);
+  document.getElementById('jwt').textContent = t;
+}
+
+async function call(method, path, outId) {
+  const out = document.getElementById(outId || 'out-health');
+  try {
+    const res = await fetch(path.startsWith('/health') ? path : base + path, { method });
+    const text = await res.text();
+    out.textContent = res.status + '\n' + text;
+  } catch (e) { out.textContent = String(e); }
+}
+
+async function callAuth(method, path, outId, bodyFn) {
+  const out = document.getElementById(outId);
+  const opts = { method, headers: { Authorization: 'Bearer ' + token } };
+  if (bodyFn) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(bodyFn());
+  }
+  const res = await fetch(base + path, opts);
+  out.textContent = res.status + '\n' + await res.text();
+}
+
+async function callAuthPost(path, textareaId, outId) {
+  const out = document.getElementById(outId);
+  const res = await fetch(base + path, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: document.getElementById(textareaId).value
+  });
+  const text = await res.text();
+  out.textContent = res.status + '\n' + text;
+  try {
+    const j = JSON.parse(text);
+    if (j.id) document.getElementById('trip-id').value = j.id;
+    if (j.operator && j.operator.id) document.getElementById('operator-id').value = j.operator.id;
+    if (j.trip_pin) document.getElementById('trip-pin').value = j.trip_pin;
+  } catch {}
+}
+
+async function postJson(path, textareaId, outId) {
+  const out = document.getElementById(outId);
+  const res = await fetch(base + path, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: document.getElementById(textareaId).value
+  });
+  out.textContent = res.status + '\n' + await res.text();
+}
+
+async function requestOtp() {
+  const phone = document.getElementById('phone').value;
+  const res = await fetch(base + '/auth/otp/request', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone })
+  });
+  document.getElementById('out-otp-req').textContent = res.status + '\n' + await res.text();
+}
+
+async function verifyOtp() {
+  const body = {
+    phone: document.getElementById('phone').value,
+    code: document.getElementById('otp').value,
+    role: document.getElementById('role').value
+  };
+  const res = await fetch(base + '/auth/otp/verify', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const text = await res.text();
+  document.getElementById('out-otp-verify').textContent = res.status + '\n' + text;
+  try { saveToken(JSON.parse(text).token); } catch {}
+}
+
+async function uploadDoc() {
+  const fd = new FormData();
+  fd.append('doc_type', document.getElementById('doc-type').value);
+  fd.append('file', document.getElementById('doc-file').files[0]);
+  const res = await fetch(base + '/operator/verification/upload', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: fd
+  });
+  const text = await res.text();
+  document.getElementById('out-upload').textContent = res.status + '\n' + text;
+  try {
+    const doc = JSON.parse(text);
+    const ta = document.getElementById('verify-json');
+    const j = JSON.parse(ta.value);
+    j.documents = j.documents || [];
+    j.documents.push({
+      doc_type: document.getElementById('doc-type').value,
+      storage_key: doc.storage_key,
+      sha256_hash: doc.sha256_hash,
+      mime_type: doc.mime_type || 'image/jpeg'
+    });
+    ta.value = JSON.stringify(j, null, 2);
+  } catch {}
+}
+
+async function submitVerification() {
+  const res = await fetch(base + '/operator/verification/submit', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: document.getElementById('verify-json').value
+  });
+  document.getElementById('out-verify').textContent = res.status + '\n' + await res.text();
+}
+</script>
+</body>
+</html>
