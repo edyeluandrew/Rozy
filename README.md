@@ -1,82 +1,88 @@
 # Rozy
 
-Local ride-hailing platform for Mbarara, Western Uganda.
+Local ride-hailing for **Mbarara**, Western Uganda.
 
-**Stack:** Flutter (passenger + driver apps) · Go backend · Neon PostgreSQL · Redis GEO · React admin
+Cash rides. Drivers earn the fare; Rozy takes a fixed fee from the **driver wallet**. Built for boda and car operators first.
 
-## Apps
+## Stack
 
-| App | Folder | Users |
-|-----|--------|-------|
-| Rozy | `mobile/` (passenger flavor) | Passengers |
-| Rozy Driver | `mobile/` (driver flavor) | Boda riders & car drivers |
-| Admin | `admin/` | Operations & verification |
+| Layer | Tech |
+|-------|------|
+| Passenger & driver apps | Flutter |
+| API | Go (Chi) |
+| Database | Neon PostgreSQL + PostGIS |
+| Dispatch | Redis GEO (Postgres fallback) |
+| Admin | React + Vite |
+
+## Repo layout
+
+```
+backend/   Go API, migrations, wallet webhooks, WebSockets
+mobile/    Flutter — passenger (`main_passenger.dart`) & driver (`main_driver.dart`)
+admin/     Verification queue, active trips, operators
+docs/      Architecture, API, screens, brand
+```
 
 ## Quick start
 
-### Backend
+### 1. Backend
 
 ```bash
 cd backend
-cp .env.example .env   # add Neon DATABASE_URL, Redis, etc.
+cp .env.example .env   # fill DATABASE_URL and secrets locally — never commit .env
 go mod download
 go run ./cmd/api
 ```
 
-Apply migrations to Neon:
+Migrations run on startup when `AUTO_MIGRATE=true`.
 
-```bash
-# Automatic on API startup (AUTO_MIGRATE=true), or manually:
-migrate -path ./migrations -database "$DATABASE_URL" up
-```
+Local tester: [http://localhost:8080/dev](http://localhost:8080/dev)
 
-**Browser API tester:** start the server and open [http://localhost:8080/dev](http://localhost:8080/dev) to test every endpoint from the browser.
-
-### Admin dashboard
+### 2. Admin
 
 ```bash
 cd admin
 npm install
 npm run dev
-# → http://localhost:5173
+# http://localhost:5173
 ```
 
-Admin login: phone **+256700000000** · OTP in API console · approve/reject in Verification queue.
+Use a seeded admin account from your local DB (see `docs/` / `/dev` page). OTP is printed in the API console when `SMS_PROVIDER=console` — not stored in this README.
 
-### Mobile
-
-Install [Flutter](https://docs.flutter.dev/get-started/install), then:
+### 3. Mobile
 
 ```bash
 cd mobile
 flutter pub get
 
-# Windows / iOS simulator (API on localhost)
+# Local API (desktop / simulator)
 flutter run -t lib/main_passenger.dart
 flutter run -t lib/main_driver.dart
 
-# Android emulator (API via 10.0.2.2)
-flutter run -t lib/main_passenger.dart --dart-define=API_BASE_URL=http://10.0.2.2:8080/v1
-flutter run -t lib/main_driver.dart --dart-define=API_BASE_URL=http://10.0.2.2:8080/v1
-
-# Physical device (use your PC LAN IP)
-flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8080/v1 -t lib/main_passenger.dart
-
-# Mapbox map (passenger app)
-flutter run -t lib/main_passenger.dart --dart-define=MAPBOX_ACCESS_TOKEN=pk.your_token_here
+# Physical Android phone (same Wi‑Fi as your PC)
+flutter run -t lib/main_driver.dart --dart-define=API_BASE_URL=http://YOUR_PC_LAN_IP:8080/v1
 ```
+
+Mapbox (optional): pass `--dart-define=MAPBOX_ACCESS_TOKEN=pk....` at run time. Do not commit tokens.
+
+## Secrets policy
+
+- **Commit:** `.env.example` (placeholders only)
+- **Never commit:** `.env`, API keys, DB passwords, JWT secrets, MoMo/Airtel secrets, Mapbox tokens
+- Put real values only in your local `.env` or CI secrets
 
 ## Docs
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [API & WebSocket events](docs/API.md)
-- [Screen lists](docs/SCREENS.md)
-- [Brand & colors](docs/BRAND.md)
+- [API & WebSockets](docs/API.md)
+- [Screens](docs/SCREENS.md)
+- [Brand](docs/BRAND.md)
+- [Database](docs/DATABASE.md)
 
-## MVP rules (locked)
+## MVP rules
 
 - Mbarara pilot first
 - Cash to driver; Rozy fee from driver wallet
-- One driver account = one vehicle mode (boda **or** car)
+- One driver account = one mode (boda **or** car)
 - One NIN = one driver account
-- Fare: base fee + per km per ride category
+- Fare: base + per km by ride type

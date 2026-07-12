@@ -1,10 +1,12 @@
 # Env & secrets
 .env
 *.pem
+*.exe
 
 # Go
 backend/bin/
 backend/vendor/
+backend/*.exe
 
 # Node
 admin/node_modules/
