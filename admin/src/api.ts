@@ -35,7 +35,9 @@ export const authApi = {
   verifyOtp: (phone: string, code: string) =>
     api<{ token: string; user: { role: string } }>('/auth/otp/verify', {
       method: 'POST',
-      body: JSON.stringify({ phone, code, role: 'admin' }),
+      // Do not send role=admin — API only allows passenger/driver on verify.
+      // Seeded admin (+256700000000) already has admin role in the database.
+      body: JSON.stringify({ phone, code }),
     }),
 }
 

@@ -46,7 +46,7 @@ export default function Login({ onLoggedIn }: Props) {
       <h1 className="text-xl font-semibold">Rozy Admin</h1>
       <p className="mt-1 text-sm text-kdgrey">Mbarara operations login</p>
       <p className="mt-4 text-xs text-kdgrey">
-        Default admin phone: +256700000000 · OTP prints in API server console
+        Admin phone: +256700000000 · OTP prints in Render logs (not SMS)
       </p>
       <label className="mt-4 block text-sm">Phone</label>
       <input

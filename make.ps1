@@ -22,7 +22,16 @@ function Get-GoExe {
 function Get-NpmExe {
     $cmd = Get-Command npm -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
-    throw "npm not found. Install Node.js from https://nodejs.org/"
+    $default = "C:\Program Files\nodejs\npm.cmd"
+    if (Test-Path $default) { return $default }
+    throw "npm not found. Install Node.js from https://nodejs.org/ and restart your terminal."
+}
+
+function Ensure-NodeOnPath {
+    $nodeDir = Split-Path (Get-NpmExe) -Parent
+    if ($env:PATH -notlike "*$nodeDir*") {
+        $env:PATH = "$nodeDir;$env:PATH"
+    }
 }
 
 function Get-FlutterExe {
@@ -48,8 +57,10 @@ function Show-Help {
     Write-Host "  make build          - build API binary"
     Write-Host "  make admin          - start React admin dashboard (:5173)"
     Write-Host "  make redis          - start local Redis via Docker"
-    Write-Host "  make passenger      - run Flutter passenger app"
-    Write-Host "  make driver         - run Flutter driver app"
+    Write-Host "  make passenger      - run Flutter passenger app (local API)"
+    Write-Host "  make driver         - run Flutter driver app (local API)"
+    Write-Host "  make passenger-prod - run passenger app (Render API)"
+    Write-Host "  make driver-prod    - run driver app (Render API)"
     Write-Host "  make dev            - show full-stack startup tips"
     Write-Host "  make help           - show this help"
     Write-Host ""
@@ -108,6 +119,7 @@ switch ($Target.ToLower()) {
     }
 
     "admin" {
+        Ensure-NodeOnPath
         $npm = Get-NpmExe
         Push-Location $Admin
         try {
@@ -155,6 +167,40 @@ switch ($Target.ToLower()) {
                 & $flutter run -t lib/main_driver.dart @RemainingArgs
             } else {
                 & $flutter run -t lib/main_driver.dart
+            }
+        }
+        finally { Pop-Location }
+    }
+
+    "passenger-prod" {
+        $flutter = Get-FlutterExe
+        Push-Location $Mobile
+        try {
+            & $flutter pub get
+            $defines = @(
+                "--dart-define=API_BASE_URL=https://rozy.onrender.com/v1"
+            )
+            if ($RemainingArgs) {
+                & $flutter run -t lib/main_passenger.dart @defines @RemainingArgs
+            } else {
+                & $flutter run -t lib/main_passenger.dart @defines
+            }
+        }
+        finally { Pop-Location }
+    }
+
+    "driver-prod" {
+        $flutter = Get-FlutterExe
+        Push-Location $Mobile
+        try {
+            & $flutter pub get
+            $defines = @(
+                "--dart-define=API_BASE_URL=https://rozy.onrender.com/v1"
+            )
+            if ($RemainingArgs) {
+                & $flutter run -t lib/main_driver.dart @defines @RemainingArgs
+            } else {
+                & $flutter run -t lib/main_driver.dart @defines
             }
         }
         finally { Pop-Location }
