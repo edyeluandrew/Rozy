@@ -130,6 +130,47 @@ func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) 
 	return &u, nil
 }
 
+func (r *Repository) HasOperatorProfile(ctx context.Context, userID uuid.UUID) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(SELECT 1 FROM operator_profiles WHERE user_id = $1)
+	`, userID).Scan(&exists)
+	return exists, err
+}
+
+func (r *Repository) SetUserRole(ctx context.Context, userID uuid.UUID, role string) (*User, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	var u User
+	err = tx.QueryRow(ctx, `
+		UPDATE users SET role = $2::user_role, updated_at = now()
+		WHERE id = $1
+		RETURNING id, phone, role::text
+	`, userID, role).Scan(&u.ID, &u.Phone, &u.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	if role == "passenger" {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO passenger_profiles (user_id) VALUES ($1)
+			ON CONFLICT (user_id) DO NOTHING
+		`, userID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
 func hashOTP(code string) string {
 	sum := sha256.Sum256([]byte(code))
 	return hex.EncodeToString(sum[:])

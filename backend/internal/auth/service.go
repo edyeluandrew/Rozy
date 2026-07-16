@@ -116,6 +116,11 @@ func (s *Service) VerifyOTP(ctx context.Context, rawPhone, code, requestedRole s
 		}
 	} else if err != nil {
 		return nil, "", time.Time{}, err
+	} else {
+		user, err = s.applyRequestedRole(ctx, user, requestedRole)
+		if err != nil {
+			return nil, "", time.Time{}, err
+		}
 	}
 
 	token, expiresAt, err := s.tokens.Issue(user)
@@ -133,6 +138,29 @@ func defaultRole(requested string) string {
 	default:
 		return "passenger"
 	}
+}
+
+// applyRequestedRole lets the same phone use driver or passenger apps before
+// operator registration locks the account as a driver.
+func (s *Service) applyRequestedRole(ctx context.Context, user *User, requestedRole string) (*User, error) {
+	if user.Role == "admin" {
+		return user, nil
+	}
+
+	desired := defaultRole(requestedRole)
+	if desired == user.Role || desired == "admin" {
+		return user, nil
+	}
+
+	hasOperator, err := s.repo.HasOperatorProfile(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	if hasOperator {
+		return user, nil
+	}
+
+	return s.repo.SetUserRole(ctx, user.ID, desired)
 }
 
 func (s *Service) Me(ctx context.Context, userID string) (*User, error) {

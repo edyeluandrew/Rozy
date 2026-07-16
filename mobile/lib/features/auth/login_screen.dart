@@ -86,6 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: RozyColors.grey,
                     ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Any Uganda number (+256…) works. Same number can be used for '
+                '${isDriver ? 'driver' : 'passenger'} until you complete driver registration.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: RozyColors.grey,
+                    ),
+              ),
               const SizedBox(height: 32),
               Card(
                 child: Padding(

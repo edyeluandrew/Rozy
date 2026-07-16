@@ -37,7 +37,28 @@ function Ensure-NodeOnPath {
 function Get-FlutterExe {
     $cmd = Get-Command flutter -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
+    $junction = "C:\flutter\bin\flutter.bat"
+    if (Test-Path $junction) { return $junction }
     throw "flutter not found. Install Flutter and add it to PATH."
+}
+
+function Ensure-FlutterBuildEnv {
+    $flutter = Get-FlutterExe
+    $flutterBin = Split-Path $flutter -Parent
+    if ($env:PATH -notlike "*$flutterBin*") {
+        $env:PATH = "$flutterBin;$env:PATH"
+    }
+    if ($env:USERPROFILE -match " " -and (-not $env:PUB_CACHE -or $env:PUB_CACHE -match " ")) {
+        $env:PUB_CACHE = "C:\pub-cache"
+        New-Item -ItemType Directory -Force -Path $env:PUB_CACHE | Out-Null
+    }
+}
+
+function Get-MobileDir {
+    if ($env:USERPROFILE -match " " -and (Test-Path "C:\Rozy\mobile")) {
+        return "C:\Rozy\mobile"
+    }
+    return $Mobile
 }
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -145,8 +166,9 @@ switch ($Target.ToLower()) {
     }
 
     "passenger" {
+        Ensure-FlutterBuildEnv
         $flutter = Get-FlutterExe
-        Push-Location $Mobile
+        Push-Location (Get-MobileDir)
         try {
             & $flutter pub get
             if ($RemainingArgs) {
@@ -159,8 +181,9 @@ switch ($Target.ToLower()) {
     }
 
     "driver" {
+        Ensure-FlutterBuildEnv
         $flutter = Get-FlutterExe
-        Push-Location $Mobile
+        Push-Location (Get-MobileDir)
         try {
             & $flutter pub get
             if ($RemainingArgs) {
@@ -173,8 +196,9 @@ switch ($Target.ToLower()) {
     }
 
     "passenger-prod" {
+        Ensure-FlutterBuildEnv
         $flutter = Get-FlutterExe
-        Push-Location $Mobile
+        Push-Location (Get-MobileDir)
         try {
             & $flutter pub get
             $defines = @(
@@ -190,8 +214,9 @@ switch ($Target.ToLower()) {
     }
 
     "driver-prod" {
+        Ensure-FlutterBuildEnv
         $flutter = Get-FlutterExe
-        Push-Location $Mobile
+        Push-Location (Get-MobileDir)
         try {
             & $flutter pub get
             $defines = @(
