@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/services/app_services.dart';
+import '../../core/theme/rozy_colors.dart';
 import '../driver/driver_shell.dart';
 import '../passenger/ride_request_screen.dart';
 import '../operator/mode_selection_screen.dart';
@@ -95,9 +96,25 @@ class _OtpScreenState extends State<OtpScreen> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              Text(
-                'Check the API server console in dev mode.',
-                style: Theme.of(context).textTheme.bodySmall,
+              Card(
+                color: RozyColors.beige,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Dev mode: OTP is not sent by SMS.',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Check the API server terminal where you ran make run. Look for:\n[auth] OTP for ${widget.phone}: ######',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               TextField(

@@ -1,4 +1,4 @@
-.PHONY: help run migrate migrate-down test test-api build admin dev redis
+.PHONY: help run migrate migrate-down test test-api build admin dev redis passenger driver
 
 BACKEND_DIR := backend
 ADMIN_DIR := admin
@@ -13,10 +13,13 @@ help:
 	@echo   make test-api     - integration test all HTTP APIs (API must be running)
 	@echo   make build        - build API binary
 	@echo   make admin        - start React admin dashboard
-	@echo   make dev          - tips for running full stack
 	@echo   make redis        - start local Redis via Docker
+	@echo   make passenger    - run Flutter passenger app
+	@echo   make driver       - run Flutter driver app
+	@echo   make dev          - tips for running full stack
 	@echo.
-	@echo From backend/: cd backend && make run  (same commands)
+	@echo Windows (no GNU make): use make.cmd instead, e.g. make run
+	@echo From backend/: make run works via backend/make.cmd
 
 run:
 	cd $(BACKEND_DIR) && go run ./cmd/api
